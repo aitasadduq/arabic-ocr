@@ -3,6 +3,7 @@ import 'package:nuqta_engine/nuqta_engine.dart';
 
 import '../../app_scope.dart';
 import '../../models/scan.dart';
+import '../adaptive.dart';
 import '../labels.dart';
 import '../page_import.dart';
 import '../widgets/model_status_card.dart';
@@ -39,30 +40,19 @@ class HomeScreen extends StatelessWidget {
                 ],
               );
             }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: ListView(
-                    padding: pad,
-                    children: const [_Header(), _Start()],
-                  ),
-                ),
-                VerticalDivider(
-                  width: 1,
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                Expanded(
-                  flex: 4,
-                  child: CustomScrollView(
-                    slivers: [
-                      const SliverToBoxAdapter(child: SizedBox(height: 72)),
-                      SliverPadding(padding: pad, sliver: const _RecentList()),
-                    ],
-                  ),
-                ),
-              ],
+            return AdaptiveSplit(
+              resizable: false,
+              initialFraction: 5 / 9,
+              first: ListView(
+                padding: pad,
+                children: const [_Header(), _Start()],
+              ),
+              second: CustomScrollView(
+                slivers: [
+                  const SliverToBoxAdapter(child: SizedBox(height: 72)),
+                  SliverPadding(padding: pad, sliver: const _RecentList()),
+                ],
+              ),
             );
           },
         ),
@@ -325,7 +315,7 @@ class _RecentList extends StatelessWidget {
       listenable: Listenable.merge([s.history, s.runner]),
       builder: (context, _) {
         final scans = s.history.scans;
-        return SliverList.list(
+        final header = SliverList.list(
           children: [
             Text(
               l.recentTitle,
@@ -350,14 +340,41 @@ class _RecentList extends StatelessWidget {
                   ],
                 ),
               ),
-            for (final scan in scans)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _RecentTile(
-                  scan: scan,
-                  running: identical(s.runner.scan, scan) && s.runner.isRunning,
-                ),
-              ),
+          ],
+        );
+        Widget tile(Scan scan) => _RecentTile(
+          scan: scan,
+          running: identical(s.runner.scan, scan) && s.runner.isRunning,
+        );
+        return SliverMainAxisGroup(
+          slivers: [
+            header,
+            SliverLayoutBuilder(
+              builder: (context, c) {
+                // two columns once a single column gets wide (the iPhone Duo
+                // unfolded in portrait, small tablets)
+                if (c.crossAxisExtent >= 560) {
+                  return SliverGrid.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          mainAxisExtent: 108,
+                        ),
+                    itemCount: scans.length,
+                    itemBuilder: (context, i) => tile(scans[i]),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: scans.length,
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: tile(scans[i]),
+                  ),
+                );
+              },
+            ),
           ],
         );
       },

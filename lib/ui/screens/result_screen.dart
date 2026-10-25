@@ -11,6 +11,7 @@ import '../../core/document/document_parser.dart';
 import '../../core/document/ocr_document.dart';
 import '../../core/export/export_format.dart';
 import '../../models/scan.dart';
+import '../adaptive.dart';
 import '../export_sheet.dart';
 import '../labels.dart';
 import '../theme.dart';
@@ -36,7 +37,19 @@ class _ResultScreenState extends State<ResultScreen>
 
   /// null = all pages.
   String? _pageId;
-  bool _showImage = false;
+
+  /// null: show the page image when there is room for it (medium and
+  /// expanded windows, e.g. the iPhone Duo unfolded); otherwise the user's
+  /// choice.
+  bool? _showImageChoice;
+  WindowSize _window = WindowSize.compact;
+
+  bool get _showImage => _showImageChoice ?? _window.atLeastMedium;
+
+  // keep the panes' state (scroll position, selection, zoom) when the layout
+  // changes, e.g. when the phone is folded or unfolded mid-reading
+  final _textKey = GlobalKey();
+  final _imageKey = GlobalKey();
   bool _follow = true;
   String? _editingId;
   final _editor = TextEditingController();
@@ -79,9 +92,15 @@ class _ResultScreenState extends State<ResultScreen>
     return identical(r.scan, scan) ? r.currentPage : null;
   }
 
+  String? _pacedPageId;
+
   void _onRunner() {
     final page = _activePage;
     if (page != null) {
+      if (page.id != _pacedPageId) {
+        _pacedPageId = page.id;
+        _paced.reset();
+      }
       _paced.update(page.text, finished: page.status.isFinished);
     } else {
       _paced.flush();
@@ -251,7 +270,7 @@ class _ResultScreenState extends State<ResultScreen>
           IconButton(
             tooltip: _showImage ? l.hidePage : l.showPage,
             icon: Icon(_showImage ? Icons.image_rounded : Icons.image_outlined),
-            onPressed: () => setState(() => _showImage = !_showImage),
+            onPressed: () => setState(() => _showImageChoice = !_showImage),
           ),
           IconButton(
             tooltip: l.copyAll,
@@ -313,31 +332,34 @@ class _ResultScreenState extends State<ResultScreen>
       ),
       body: LayoutBuilder(
         builder: (context, box) {
-          final wide = box.maxWidth >= 840;
-          final text = _TextPane(state: this, running: running);
+          final window = WindowSize.of(box.maxWidth);
+          if (window != _window) {
+            // takes effect for the toggle on the next frame
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _window = window);
+            });
+          }
+          final text = _TextPane(key: _textKey, state: this, running: running);
           final image = _imagePage;
-          if (wide && _showImage && image != null) {
-            return Row(
-              children: [
-                Expanded(flex: 5, child: _ImagePane(page: image)),
-                VerticalDivider(width: 1, color: cs.outlineVariant),
-                Expanded(flex: 6, child: text),
-              ],
-            );
-          }
-          if (_showImage && image != null) {
-            return Column(
-              children: [
-                SizedBox(
-                  height: box.maxHeight * 0.42,
-                  child: _ImagePane(page: image),
-                ),
-                Divider(height: 1, color: cs.outlineVariant),
-                Expanded(child: text),
-              ],
-            );
-          }
-          return text;
+          final show =
+              (_showImageChoice ?? window.atLeastMedium) && image != null;
+          if (!show) return text;
+          final imagePane = _ImagePane(key: _imageKey, page: image);
+          final hinge = Separator.of(context);
+          // side by side when there is room or a vertical hinge (book posture);
+          // stacked on phones and on a horizontal fold (tabletop posture)
+          final sideBySide = hinge != null
+              ? hinge.vertical
+              : window.atLeastMedium;
+          return AdaptiveSplit(
+            axis: sideBySide ? Axis.horizontal : Axis.vertical,
+            initialFraction: sideBySide
+                ? (window == WindowSize.expanded ? 0.46 : 0.44)
+                : 0.4,
+            minPaneExtent: sideBySide ? 240 : 160,
+            first: imagePane,
+            second: text,
+          );
         },
       ),
       bottomNavigationBar: running ? _RunningBar(state: this) : null,
@@ -353,7 +375,7 @@ class _ResultScreenState extends State<ResultScreen>
 }
 
 class _TextPane extends StatelessWidget {
-  const _TextPane({required this.state, required this.running});
+  const _TextPane({super.key, required this.state, required this.running});
   final _ResultScreenState state;
   final bool running;
 
@@ -701,7 +723,7 @@ class _PageChips extends StatelessWidget {
 }
 
 class _ImagePane extends StatelessWidget {
-  const _ImagePane({required this.page});
+  const _ImagePane({super.key, required this.page});
   final ScanPage page;
 
   @override

@@ -82,6 +82,8 @@ class ScanRunner extends ChangeNotifier {
       _job = null;
       _pageStarted = null;
       if (useWakelock) unawaited(WakelockPlus.disable().catchError((_) {}));
+      // PDFs stay open while their pages are read; let them go now
+      unawaited(loader.closeAll().catchError((_) {}));
       running.complete();
       notifyListeners();
     }

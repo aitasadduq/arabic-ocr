@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../app_scope.dart';
 import '../../models/scan.dart';
+import '../adaptive.dart';
 import '../labels.dart';
 import '../page_import.dart';
 import '../widgets/mode_picker.dart';
@@ -129,7 +130,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final cs = Theme.of(context).colorScheme;
     final count = _selectedCount;
     return Scaffold(
       appBar: AppBar(
@@ -195,53 +195,41 @@ class _ReviewScreenState extends State<ReviewScreen> {
             ),
           );
           if (wide) {
-            return Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    children: [
-                      header,
-                      Expanded(
-                        child: _items.isEmpty
-                            ? Center(child: Text(l.reviewEmpty))
-                            : ReorderableListView.builder(
-                                padding: const EdgeInsets.fromLTRB(
-                                  12,
-                                  4,
-                                  12,
-                                  12,
-                                ),
-                                buildDefaultDragHandles: false,
-                                itemCount: _items.length,
-                                onReorderItem: reorder,
-                                itemBuilder: item,
-                              ),
-                      ),
-                    ],
+            return AdaptiveSplit(
+              resizable: false,
+              initialFraction: 5 / 9,
+              first: Column(
+                children: [
+                  header,
+                  Expanded(
+                    child: _items.isEmpty
+                        ? Center(child: Text(l.reviewEmpty))
+                        : ReorderableListView.builder(
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                            buildDefaultDragHandles: false,
+                            itemCount: _items.length,
+                            onReorderItem: reorder,
+                            itemBuilder: item,
+                          ),
                   ),
-                ),
-                VerticalDivider(width: 1, color: cs.outlineVariant),
-                Expanded(
-                  flex: 4,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                    children: [
-                      titleField,
-                      const SizedBox(height: 20),
-                      ModePicker(
-                        value: _mode,
-                        onChanged: (m) => setState(() => _mode = m),
-                      ),
-                      const SizedBox(height: 12),
-                      QualityPicker(
-                        value: _quality,
-                        onChanged: (q) => setState(() => _quality = q),
-                      ),
-                    ],
+                ],
+              ),
+              second: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                children: [
+                  titleField,
+                  const SizedBox(height: 20),
+                  ModePicker(
+                    value: _mode,
+                    onChanged: (m) => setState(() => _mode = m),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  QualityPicker(
+                    value: _quality,
+                    onChanged: (q) => setState(() => _quality = q),
+                  ),
+                ],
+              ),
             );
           }
           return CustomScrollView(

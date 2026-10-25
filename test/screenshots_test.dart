@@ -6,6 +6,8 @@
 import 'dart:io';
 
 import 'package:arabic_ocr/app.dart';
+import 'package:arabic_ocr/app_scope.dart';
+import 'package:arabic_ocr/services/ocr_backend.dart';
 import 'package:arabic_ocr/models/scan.dart';
 import 'package:arabic_ocr/ui/screens/review_screen.dart';
 import 'package:flutter/material.dart';
@@ -54,6 +56,44 @@ void main() {
     });
   }
 
+  /// A few saved readings so the home screen has recents.
+  Future<void> seedHistory(WidgetTester tester, AppServices s) async {
+    await tester.runAsync(() async {
+      final now = DateTime.now();
+      for (final (i, (asset, mode, title)) in [
+        (
+          'assets/samples/table.jpg',
+          NuqtaMode.markdown,
+          'تقرير المؤسسات الخيرية',
+        ),
+        (
+          'assets/samples/book.jpg',
+          NuqtaMode.asWritten,
+          'مغامرات الظربان جيمي',
+        ),
+        ('assets/samples/old_book.jpg', NuqtaMode.markdown, 'Old manuscript'),
+      ].indexed) {
+        await s.history.save(
+          Scan(
+            id: 'seed$i',
+            createdAt: now.subtract(Duration(hours: i * 26)),
+            mode: mode,
+            quality: ReadQuality.accurate,
+            title: title,
+            pages: [
+              ScanPage(
+                id: 'p1',
+                source: AssetPageSource(asset),
+                status: PageStatus.done,
+                text: DemoBackend.demoTexts[mode]!,
+              ),
+            ],
+          ),
+        );
+      }
+    });
+  }
+
   /// The runner's last steps need the real event loop once.
   Future<void> finishReading(WidgetTester tester) async {
     await tester.runAsync(
@@ -82,6 +122,7 @@ void main() {
         s.settings
           ..locale = Locale(lang)
           ..themeMode = dark ? ThemeMode.dark : ThemeMode.light;
+        await seedHistory(tester, s);
         await tester.pumpWidget(ArabicOcrApp(services: s));
         await tester.runAsync(() => s.models.init());
         await tester.pumpAndSettle();
@@ -109,11 +150,6 @@ void main() {
         }
         await finishReading(tester);
         await tester.pumpAndSettle();
-        if (size.width >= 840) {
-          // the page image next to the text
-          await tester.tap(find.byIcon(Icons.image_outlined));
-          await tester.pumpAndSettle();
-        }
         await shot(tester, 'result_$tag');
       });
     }
