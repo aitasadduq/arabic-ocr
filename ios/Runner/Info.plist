@@ -6,6 +6,8 @@
 	<string>Take photos of pages to read their text on this iPhone. Photos never leave the device.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose photos of pages to read their text on this iPhone. Photos never leave the device.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Arabic OCR only saves to your photo library when you ask it to.</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

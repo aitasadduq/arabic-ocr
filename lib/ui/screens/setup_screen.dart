@@ -121,8 +121,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         FilledButton.icon(
                           icon: const Icon(Icons.download_rounded),
                           label: Text(l.setupStart),
-                          onPressed: () =>
-                              models.download(wifiOnly: s.settings.wifiOnly),
+                          onPressed: () => startModelDownload(context),
                         ),
                         const SizedBox(height: 8),
                         OutlinedButton.icon(

@@ -1,3 +1,4 @@
+import 'package:background_downloader/background_downloader.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -38,7 +39,6 @@ class _Card extends StatelessWidget {
     final l = context.l10n;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final settings = context.services.settings;
     final percent = formatPercent(context, models.progress);
     final size = formatBytes(context, ModelStore.totalBytes);
     final (title, body, icon) = switch (models.status) {
@@ -141,8 +141,7 @@ class _Card extends StatelessWidget {
                     child: Text(l.importModel),
                   ),
                   FilledButton(
-                    onPressed: () =>
-                        models.download(wifiOnly: settings.wifiOnly),
+                    onPressed: () => startModelDownload(context),
                     child: Text(l.retry),
                   ),
                 ],
@@ -152,8 +151,7 @@ class _Card extends StatelessWidget {
                     child: Text(l.importModel),
                   ),
                   FilledButton(
-                    onPressed: () =>
-                        models.download(wifiOnly: settings.wifiOnly),
+                    onPressed: () => startModelDownload(context),
                     child: Text(l.download),
                   ),
                 ],
@@ -164,6 +162,22 @@ class _Card extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Asks to show the download's progress notification (Android 13+ needs it
+/// for long background downloads), then starts downloading.
+Future<void> startModelDownload(BuildContext context) async {
+  final s = context.services;
+  try {
+    final perms = FileDownloader().permissions;
+    if (await perms.status(PermissionType.notifications) !=
+        PermissionStatus.granted) {
+      await perms.request(PermissionType.notifications);
+    }
+  } catch (_) {
+    // tests and platforms without the plugin: download without notification
+  }
+  await s.models.download(wifiOnly: s.settings.wifiOnly);
 }
 
 /// Lets the user pick the two GGUF files from Files and installs them.
