@@ -30,11 +30,20 @@ packages/nuqta_engine/    FFI plugin
 .github/workflows/        analyze + test, Linux engine smoke test with the real model, Android APK, iOS no-codesign build
 ```
 
-## Stages
+## Stages and status
 
-1. **Stage 0: Scaffold.** Flutter app, FFI plugin skeleton, CI for analyze/test.
-2. **Stage 1: Native engine.** C ABI wrapper, Android CMake, iOS podspec + xcframework, Linux host build. Run a smoke test with the real model on Linux, from both a C++ test and Dart FFI. CI compiles for Android and iOS.
-3. **Stage 2: Core services.** Model manager (resume, size check, import), image pipeline (EXIF orientation, resize to 2.4 MP "accurate" or 1 MP "fast"), PDF rendering at 200 dpi, OCR job queue with streaming and cancel, output parser, exporters (TXT, MD, HTML, DOCX, XLSX, CSV). Unit tests for all of these.
-4. **Stage 3: UI/UX.** Material 3 theme, bundled Arabic fonts, English and Arabic UI (RTL), model-setup onboarding, home with recent scans, in-app camera, page review (reorder, rotate, crop), live streaming result, formatted/raw/edit views, copy/share/save, history, settings. Widget and screenshot tests.
-5. **Stage 4: Device CI.** Android emulator integration tests, iOS simulator build, artifacts (APK, unsigned iOS build).
-6. **Stage 5: iPhone Duo and foldables.** Adaptive two-pane layouts for the 7.6" inner display and the 5.4" cover display, hinge avoidance on Android foldables, state continuity on fold and unfold. Screenshot tests at Duo sizes.
+| Stage | Scope | Status / evidence |
+|---|---|---|
+| 0. Scaffold | Flutter app, FFI plugin, CI | Done |
+| 1. Native engine | C ABI over the upstream engine, Android CMake, iOS xcframework + podspec, Linux host build | Done. CI runs the real model through `dart:ffi` on Linux (streaming, a table read with `rowspan`, cancel). Android APK and iOS builds are green. |
+| 2. Core services | Model download/import, page loading (EXIF, PDF at 200 dpi), reading queue, parser, exporters | Done. Unit tests cover these, using real 0.8B outputs. DOCX/XLSX were checked by rendering them in LibreOffice. |
+| 3. UI/UX | Setup, home, camera, review, live result, export sheet, settings; English/Arabic, light/dark | Done. Widget tests and screenshots (CI artifact `ui-screenshots`). |
+| 4. Device CI | Android emulator + iOS simulator integration tests | Android emulator: the model was downloaded with the app's downloader, loaded and read a page with tashkeel. iOS simulator: decoding, PDFium and exports pass. |
+| 5. iPhone Duo / foldables | Size classes, hinge-aware split, page image beside the text, camera panel, state kept across fold/unfold | Done. Tests (`test/adaptive_test.dart`) and screenshots at Duo sizes. |
+
+## Known limits / next steps
+
+* **Speed on the Android emulator:** first words came after about 230 s, at 9.6 tok/s. The x86_64 build is a baseline CPU backend meant only for emulators. Phones use ARM variants picked at run time (dotprod/i8mm/SVE, KleidiAI). They have not been measured on real hardware in CI.
+* **Not tested on physical devices:** the camera, the photo and file pickers, the share sheet and the cropper are covered by builds and manual reasoning only.
+* **iOS distribution:** CI produces an unsigned IPA. Installing it needs your own signing (Xcode with an Apple ID, or a developer account).
+* **Ideas:** "Open with / Share to" this app for PDFs and images; drag and drop on large screens; re-read a looping page at native size, as the Python library does.
