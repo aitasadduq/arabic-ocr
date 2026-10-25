@@ -33,6 +33,27 @@ jobs:
         working-directory: packages/nuqta_engine
         run: flutter test
 
+  screenshots:
+    name: UI screenshots (phone, iPhone Duo, tablet)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Render screens
+        env:
+          SCREENSHOTS: '1'
+        run: flutter test test/screenshots_test.dart --update-goldens
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: test/goldens/*.png
+          retention-days: 14
+
   engine-host:
     name: Engine on Linux with the real model
     runs-on: ubuntu-latest

@@ -126,3 +126,4 @@ packages/nuqta_engine/third_party/
 packages/nuqta_engine/ios/Frameworks/
 /build-host/
 /models/
+test/goldens/

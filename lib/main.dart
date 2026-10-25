@@ -1,22 +1,38 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:nuqta_engine/nuqta_engine.dart';
+import 'package:flutter/services.dart';
 
-void main() => runApp(const App());
+import 'app.dart';
+import 'app_scope.dart';
 
-class App extends StatelessWidget {
-  const App({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(_fontLicenses);
+  final services = await AppServices.create();
+  runApp(ArabicOcrApp(services: services));
+}
 
-  @override
-  Widget build(BuildContext context) {
-    String version;
-    try {
-      version = NuqtaEngine().version;
-    } catch (e) {
-      version = 'engine unavailable: $e';
-    }
-    return MaterialApp(
-      title: 'Arabic OCR',
-      home: Scaffold(body: Center(child: Text(version))),
-    );
+Stream<LicenseEntry> _fontLicenses() async* {
+  const fonts = {
+    'IBM Plex Sans': 'ibmplexsans',
+    'Noto Sans Arabic': 'notosansarabic',
+    'Noto Naskh Arabic': 'notonaskharabic',
+    'Source Serif 4': 'sourceserif4',
+  };
+  for (final MapEntry(:key, :value) in fonts.entries) {
+    final text = await rootBundle.loadString('assets/fonts/OFL-$value.txt');
+    yield LicenseEntryWithLineBreaks([key], text);
   }
+  yield const LicenseEntryWithLineBreaks(
+    ['Nuqta-OCR', 'nuqta_engine'],
+    'Nuqta-OCR engine, prompts and sample pages: '
+    'https://github.com/SalahAlHaismawi/nuqta-ocr\n'
+    'Copyright Salah AlHaismawi, Mohamed Saleh Tulib, Ahmed ElSayed Mohamed '
+    'Ibrahim. Licensed under the Apache License, Version 2.0.',
+  );
+  yield const LicenseEntryWithLineBreaks(
+    ['llama.cpp', 'ggml'],
+    'Copyright (c) 2023-2026 The ggml authors. MIT License. '
+    'https://github.com/ggml-org/llama.cpp',
+  );
 }
