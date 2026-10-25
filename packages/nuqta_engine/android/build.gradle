@@ -1,0 +1,55 @@
+// Builds llama.cpp, mtmd and the Nuqta engine with the Android NDK (see ../src/CMakeLists.txt).
+//
+// Apps using this plugin must keep native libraries extracted on install
+// (packaging.jniLibs.useLegacyPackaging = true): the engine picks the best CPU
+// backend for the phone by scanning its library directory at run time.
+
+group = "com.aitasadduq.nuqta_engine"
+version = "1.0"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:9.1.0")
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "com.aitasadduq.nuqta_engine"
+    compileSdk = 36
+    ndkVersion = android.ndkVersion
+
+    externalNativeBuild {
+        cmake {
+            path = "../src/CMakeLists.txt"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk = 28
+        externalNativeBuild {
+            cmake {
+                // Debug builds of llama.cpp are far too slow to use, so always optimise.
+                arguments "-DCMAKE_BUILD_TYPE=Release"
+            }
+        }
+    }
+}

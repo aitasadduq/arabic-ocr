@@ -1,0 +1,64 @@
+name: arabic_ocr
+description: "Offline Arabic OCR for Android and iOS, powered by the Nuqta-OCR model."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  nuqta_engine:
+    path: packages/nuqta_engine
+
+  archive: ^4.5.2
+  background_downloader: ^9.6.4
+  camera: ^0.12.1
+  connectivity_plus: ^7.3.2
+  file_picker: ^13.2.0
+  html: ^0.15.7
+  image: ^4.12.0
+  image_cropper: ^13.0.0
+  image_picker: ^1.2.4
+  intl: ^0.20.2
+  markdown: ^7.3.1
+  path: ^1.9.1
+  path_provider: ^2.1.6
+  pdfrx: ^2.10.1
+  share_plus: ^13.3.1
+  shared_preferences: ^2.5.6
+  url_launcher: ^6.3.3
+  wakelock_plus: ^1.8.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/samples/
+    - assets/fonts/
+
+  fonts:
+    - family: IBMPlexSans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans.ttf
+    - family: NotoSansArabic
+      fonts:
+        - asset: assets/fonts/NotoSansArabic.ttf
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic.ttf
+    - family: SourceSerif4
+      fonts:
+        - asset: assets/fonts/SourceSerif4.ttf

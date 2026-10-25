@@ -117,3 +117,12 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+# App: keep lockfiles for reproducible builds
+!/pubspec.lock
+!/ios/Podfile.lock
+
+# Native engine inputs fetched/built by packages/nuqta_engine/tool/*.sh
+packages/nuqta_engine/third_party/
+packages/nuqta_engine/ios/Frameworks/
+/build-host/
+/models/

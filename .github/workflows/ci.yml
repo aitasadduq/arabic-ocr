@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.8
+  LLAMA_COMMIT: 5aeac37a35b44fde4bdffaec9159f2fcb253b622
+  MODEL_BASE: https://huggingface.co/SalahALHaismawi/Nuqta-OCR-0.8B-GGUF/resolve/main
+
+jobs:
+  analyze-test:
+    name: Analyze & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test packages/nuqta_engine/lib packages/nuqta_engine/test
+      - run: flutter analyze
+      - run: flutter test
+      - name: Engine package tests (no native library)
+        working-directory: packages/nuqta_engine
+        run: flutter test
+
+  engine-host:
+    name: Engine on Linux with the real model
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Cache llama.cpp build
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/nuqta_engine/third_party
+            build-host
+          key: engine-host-${{ env.LLAMA_COMMIT }}-${{ hashFiles('packages/nuqta_engine/src/**') }}
+          restore-keys: engine-host-${{ env.LLAMA_COMMIT }}-
+      - name: Build libnuqta_engine
+        run: |
+          packages/nuqta_engine/tool/fetch_llama.sh
+          cmake -S packages/nuqta_engine/src -B build-host -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF
+          cmake --build build-host -j4
+      - name: Cache model
+        id: model-cache
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: nuqta-ocr-0.8b-gguf-q4km-v1
+      - name: Download model
+        if: steps.model-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p models
+          curl -fL --retry 5 -o models/nuqta-ocr-0.8b-Q4_K_M.gguf "$MODEL_BASE/nuqta-ocr-0.8b-Q4_K_M.gguf"
+          curl -fL --retry 5 -o models/nuqta-ocr-0.8b-mmproj-f16.gguf "$MODEL_BASE/nuqta-ocr-0.8b-mmproj-f16.gguf"
+          ls -la models
+      - name: FFI tests with the real model
+        working-directory: packages/nuqta_engine
+        env:
+          NUQTA_ENGINE_LIB: ${{ github.workspace }}/build-host/libnuqta_engine.so
+          NUQTA_MODEL_DIR: ${{ github.workspace }}/models
+        run: flutter test test/engine_ffi_test.dart --reporter expanded
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Fetch llama.cpp
+        run: packages/nuqta_engine/tool/fetch_llama.sh
+      - run: flutter pub get
+      - name: Build APKs
+        run: flutter build apk --release --split-per-abi --target-platform android-arm64,android-x64
+      - name: Check native libraries are packaged
+        run: |
+          APK=build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          unzip -l "$APK" | grep -E "lib/arm64-v8a/lib(nuqta_engine|llama|mtmd|ggml|ggml-base|ggml-cpu-android_armv8.0_1)\.so"
+          test "$(unzip -l "$APK" | grep -c 'lib/arm64-v8a/libggml-cpu-')" -ge 4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: build/app/outputs/flutter-apk/*.apk
+          retention-days: 14
+
+  ios:
+    name: iOS build (no codesign)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Cache llama.xcframework
+        uses: actions/cache@v4
+        with:
+          path: packages/nuqta_engine/ios/Frameworks
+          key: llama-xcframework-${{ env.LLAMA_COMMIT }}-v1
+      - name: Build llama.xcframework
+        run: packages/nuqta_engine/tool/build_ios_xcframework.sh
+      - run: flutter pub get
+      - name: Build app
+        run: flutter build ios --release --no-codesign
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qr arabic-ocr-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-ipa
+          path: arabic-ocr-unsigned.ipa
+          retention-days: 14

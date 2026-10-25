@@ -1,0 +1,18 @@
+nuqta_engine
+Copyright 2026 the arabic-ocr authors. Licensed under the Apache License 2.0.
+
+This package includes software from other projects:
+
+* Nuqta OCR engine (src/upstream/nuqta_core.cpp, nuqta_core.h), test images
+  (test/fixtures) and the model prompts and input policy (lib/src/modes.dart,
+  lib/src/input_policy.dart, lib/src/text_cleanup.dart, ported from Python).
+  https://github.com/SalahAlHaismawi/nuqta-ocr (commit aafbb41)
+  Copyright Salah AlHaismawi, Mohamed Saleh Tulib, Ahmed ElSayed Mohamed Ibrahim.
+  Apache License 2.0 (src/upstream/LICENSE).
+
+* llama.cpp / ggml, fetched at build time (commit 5aeac37a).
+  https://github.com/ggml-org/llama.cpp
+  Copyright (c) 2023-2026 The ggml authors. MIT License.
+
+The Nuqta-OCR model weights are downloaded by the app at run time and are
+covered by their own model card (Apache License 2.0).
