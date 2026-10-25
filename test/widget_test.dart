@@ -82,4 +82,35 @@ void main() {
     final dir = Directionality.of(tester.element(find.byType(HomeScreen)));
     expect(dir, TextDirection.rtl);
   });
+
+  testWidgets('on a small screen, reading without the model explains why', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(
+      640,
+      1280,
+    ); // 320x640 like the CI emulator
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final services = await tester.runAsync(
+      () => fakeServices(tmp, modelReady: false),
+    );
+    await tester.pumpWidget(ArabicOcrApp(services: services!));
+    await tester.runAsync(() => services.models.init());
+    await tester.pumpAndSettle();
+    // the same steps as integration_test/app_test.dart
+    await tester.ensureVisible(find.text('Not now'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Not now'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HomeScreen), findsOneWidget);
+    await tester.ensureVisible(find.text('Table'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Table'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.text('Download the model first to read pages.'),
+      findsOneWidget,
+    );
+  });
 }
