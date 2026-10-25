@@ -19,6 +19,7 @@ import 'package:arabic_ocr/services/ocr_backend.dart';
 import 'package:arabic_ocr/services/page_loader.dart';
 import 'package:arabic_ocr/ui/screens/home_screen.dart';
 import 'package:arabic_ocr/ui/screens/setup_screen.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:nuqta_engine/nuqta_engine.dart';
@@ -63,11 +64,20 @@ void main() {
     await tester.pumpWidget(ArabicOcrApp(services: services));
     await tester.pumpAndSettle();
     expect(find.byType(SetupScreen), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Not now'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Not now'));
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
     // reading needs the model: the app says so instead of failing
-    await tester.ensureVisible(find.text('Table'));
+    await tester.scrollUntilVisible(
+      find.text('Table'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Table'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(
