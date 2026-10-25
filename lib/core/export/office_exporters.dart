@@ -128,8 +128,9 @@ abstract final class OfficeExporters {
       b.write('<w:r>${props.isEmpty ? '' : '<w:rPr>$props</w:rPr>'}');
       for (var i = 0; i < parts.length; i++) {
         if (i > 0) b.write('<w:br/>');
-        if (parts[i].isNotEmpty)
+        if (parts[i].isNotEmpty) {
           b.write('<w:t xml:space="preserve">${_x(parts[i])}</w:t>');
+        }
       }
       b.write('</w:r>');
     }
@@ -209,8 +210,9 @@ abstract final class OfficeExporters {
             slot.row == r ? '<w:vMerge w:val="restart"/>' : '<w:vMerge/>',
           );
         }
-        if (cell.header)
+        if (cell.header) {
           props.write('<w:shd w:val="clear" w:color="auto" w:fill="F1EDE6"/>');
+        }
         final content = slot.row == r
             ? cell.text
                   .split('\n')
@@ -346,16 +348,18 @@ abstract final class OfficeExporters {
         if (s.cell.colSpan == 1 && s.cell.rowSpan == 1) continue;
         final r2 = math.min(t.rowCount, r + s.cell.rowSpan) - 1;
         final c2 = math.min(t.columnCount, c + s.cell.colSpan) - 1;
-        if (r2 > r || c2 > c)
+        if (r2 > r || c2 > c) {
           merges.add(
             '<mergeCell ref="${_col(c)}${r + 1}:${_col(c2)}${r2 + 1}"/>',
           );
+        }
       }
     }
-    if (merges.isNotEmpty)
+    if (merges.isNotEmpty) {
       b.write(
         '<mergeCells count="${merges.length}">${merges.join()}</mergeCells>',
       );
+    }
     b.write('</worksheet>');
     return b.toString();
   }

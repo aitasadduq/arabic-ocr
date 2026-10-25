@@ -35,8 +35,9 @@ abstract final class TextExporters {
           .map((i) {
             final indent = '  ' * i.level;
             if (i.marker == '•') return '$indent- ${_mdRuns(i.runs)}';
-            if (_standardMarker.hasMatch(i.marker))
+            if (_standardMarker.hasMatch(i.marker)) {
               return '$indent${i.marker} ${_mdRuns(i.runs)}';
+            }
             // "٣-" is not a Markdown list marker: keep it as text on its own line
             return '$indent${i.marker} ${_mdRuns(i.runs)}  ';
           })

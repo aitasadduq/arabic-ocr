@@ -148,8 +148,9 @@ abstract final class DocumentParser {
     }
 
     void addItem(bool ordered, ListItem item) {
-      if (list != null && list!.ordered != ordered && item.level == 0)
+      if (list != null && list!.ordered != ordered && item.level == 0) {
         endList();
+      }
       list ??= ListBlock(ordered: ordered, items: []);
       list!.items.add(item);
     }
