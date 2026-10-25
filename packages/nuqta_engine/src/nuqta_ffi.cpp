@@ -21,6 +21,7 @@
 #endif
 
 #include "llama.h"
+#include "mtmd-helper.h"
 #include "nuqta_core.h"
 
 #ifndef NUQTA_LLAMA_COMMIT
@@ -58,8 +59,9 @@ void forget(int32_t job) {
     g_cancelled.erase(job);
 }
 
+// errors only (llama.cpp warns on every M-RoPE batch); NUQTA_LOG=1 shows everything
 void log_cb(ggml_log_level level, const char * text, void *) {
-    if (level < GGML_LOG_LEVEL_WARN && !getenv("NUQTA_LOG")) return;
+    if (level < GGML_LOG_LEVEL_ERROR && !getenv("NUQTA_LOG")) return;
 #ifdef __ANDROID__
     __android_log_print(ANDROID_LOG_WARN, "nuqta", "%s", text);
 #else
@@ -101,6 +103,7 @@ void nuqta_load_async(int32_t job, const char * model_path, const char * mmproj_
     const int threads = n_threads > 0 ? n_threads : nuqta_default_threads();
     std::thread([=] {
         llama_log_set(log_cb, nullptr);
+        mtmd_helper_log_set(log_cb, nullptr);
         std::string err;
         const bool ok = nuqta::load(model, mmproj, threads, image_max_tokens, dir, err);
         emit(job, NUQTA_EVENT_LOADED, ok ? 1 : 0, ok ? nullptr : &err);

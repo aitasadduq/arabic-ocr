@@ -31,6 +31,10 @@ Pod::Spec.new do |s|
     'HEADER_SEARCH_PATHS' => headers,
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) NUQTA_LLAMA_COMMIT=\"5aeac37a35b44fde4bdffaec9159f2fcb253b622\"',
     'GCC_OPTIMIZATION_LEVEL' => 's',
+    # CocoaPods copies the matching xcframework slice here but does not link it
+    # into this pod's own (dynamic) framework.
+    'FRAMEWORK_SEARCH_PATHS' => '$(inherited) "${PODS_XCFRAMEWORKS_BUILD_DIR}/nuqta_engine"',
+    'OTHER_LDFLAGS' => '$(inherited) -framework llama',
   }
   s.swift_version = '5.0'
 end

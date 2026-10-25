@@ -26,8 +26,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         // 64-bit only: the model needs more address space than 32-bit ARM offers.
-        // x86_64 is for emulators.
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        // x86_64 is for emulators. (--split-per-abi sets its own ABI list.)
+        if (!project.hasProperty("split-per-abi")) {
+            ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        }
     }
 
     // Keep native libraries extracted: the OCR engine picks the best CPU backend
